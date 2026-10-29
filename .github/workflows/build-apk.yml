@@ -13,12 +13,11 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Unzip Android Source
-      run: unzip hikawati_android_source.zip -d ./source_code
-
-    - name: Find Android Directory
+    - name: Unzip and Find
       run: |
-        DIR=$(find ./source_code -name "gradlew" -printf '%h\n' | head -n 1)
+        unzip hikawati_android_source.zip -d ./source_code
+        cd ./source_code
+        DIR=$(find . -name "gradlew" -type f | head -n 1 | xargs dirname)
         echo "ANDROID_DIR=$DIR" >> $GITHUB_ENV
 
     - name: Set up JDK 17
@@ -27,18 +26,14 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@v3
-
-    - name: Make gradlew executable
-      run: chmod +x ${{ env.ANDROID_DIR }}/gradlew
-
     - name: Build with Gradle
-      working-directory: ${{ env.ANDROID_DIR }}
-      run: ./gradlew assembleDebug
+      run: |
+        cd ${{ env.ANDROID_DIR }}
+        chmod +x gradlew
+        ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: Hikawati-Debug-APK
-        path: ${{ env.ANDROID_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+        path: ./source_code/**/build/outputs/apk/debug/*.apk
